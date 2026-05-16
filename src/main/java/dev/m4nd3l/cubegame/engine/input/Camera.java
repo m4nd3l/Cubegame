@@ -1,0 +1,136 @@
+package dev.m4nd3l.cubegame.engine.input;
+
+import dev.m4nd3l.cubegame.engine.opengl.wrapper.ShaderProgram;
+import dev.m4nd3l.cubegame.engine.opengl.wrapper.uniforms.Matrix4fUniform;
+import org.joml.FrustumIntersection;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW;
+
+public class Camera {
+
+    private float FOV, nearPlane, farPlane;
+    private int width, height;
+
+    private float speed = 16f;
+    private float sensitivity = 100.0f;
+
+    private Vector3f cameraPosition,
+            cameraOrientation = new Vector3f(0.0f, 0.0f, -1.0f),
+            upDirection = new Vector3f(0.0f, 1.0f, 0.0f);
+    private Matrix4f viewMatrix = new Matrix4f();
+    private Matrix4f projectionMatrix = new Matrix4f();
+    private Matrix4f combinedMatrix = new Matrix4f();
+
+    private FrustumIntersection frustum;
+    public transient boolean frustumFreeze;
+
+    public Camera(float FOV, float nearPlane, float farPlane, int width, int height, Vector3f cameraPosition) {
+        this.FOV = FOV;
+        this.nearPlane = nearPlane;
+        this.farPlane = farPlane;
+        this.width = width;
+        this.height = height;
+        this.cameraPosition = cameraPosition;
+        this.frustum = new FrustumIntersection();
+        frustumFreeze = false;
+    }
+
+    public Camera() { }
+
+    public Matrix4f getViewMatrix() { return viewMatrix; }
+    public Matrix4f getProjectionMatrix() { return projectionMatrix; }
+
+    public void processKeyboard(Keyboard keyboard, float deltaTime) {
+        float velocity = speed * deltaTime;
+
+        if (keyboard.isKeyDown(KeyboardKeys.W))
+            cameraPosition.add(new Vector3f(cameraOrientation).mul(velocity));
+
+        if (keyboard.isKeyDown(KeyboardKeys.A))
+            cameraPosition.add(
+                    new Vector3f(cameraOrientation)
+                            .cross(upDirection)
+                            .normalize()
+                            .mul(-velocity)
+            );
+
+        if (keyboard.isKeyDown(KeyboardKeys.S))
+            cameraPosition.add(new Vector3f(cameraOrientation).mul(-velocity));
+
+        if (keyboard.isKeyDown(KeyboardKeys.D))
+            cameraPosition.add(
+                    new Vector3f(cameraOrientation)
+                            .cross(upDirection)
+                            .normalize()
+                            .mul(velocity)
+            );
+
+        if (keyboard.isKeyDown(KeyboardKeys.SPACE))
+            cameraPosition.add(new Vector3f(upDirection).mul(velocity));
+
+        if (keyboard.isKeyDown(KeyboardKeys.LEFT_SHIFT))
+            cameraPosition.add(new Vector3f(upDirection).mul(-velocity));
+
+        if (keyboard.isKeyDown(KeyboardKeys.LEFT_CONTROL)) speed = 32.0f;
+        else speed = 16.0f;
+
+    }
+
+    public void processMouseMovement(Mouse mouse, long glfwWindow) {
+        if (mouse.isButtonDown(MouseKeys.LEFT)) {
+
+            GLFW.glfwSetInputMode(glfwWindow, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
+
+            double mouseX = mouse.getX();
+            double mouseY = mouse.getY();
+
+            float rotationX = sensitivity * (float) (mouseY - height / 2.0f) / height;
+            float rotationY = sensitivity * (float) (mouseX - width / 2.0f) / width;
+
+            Vector3f right = new Vector3f(cameraOrientation)
+                    .cross(upDirection)
+                    .normalize();
+
+            Vector3f newOrientation = new Vector3f(cameraOrientation)
+                    .rotateAxis((float) Math.toRadians(-rotationX),
+                            right.x, right.y, right.z);
+
+            float angle = newOrientation.angle(upDirection);
+
+            if (Math.abs(angle - Math.toRadians(90.0f)) <= Math.toRadians(85.0f)) cameraOrientation.set(newOrientation);
+
+            cameraOrientation.rotateAxis(
+                    (float) Math.toRadians(-rotationY),
+                    upDirection.x, upDirection.y, upDirection.z
+            );
+
+            GLFW.glfwSetCursorPos(glfwWindow, width / 2.0, height / 2.0);
+        } else GLFW.glfwSetInputMode(glfwWindow, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+
+    }
+
+    public void uploadUniforms(ShaderProgram shader) {
+        shader.bind();
+        shader.uploadUniform(new Matrix4fUniform("viewMatrix", getViewMatrix(), shader.getID()));
+        shader.uploadUniform(new Matrix4fUniform("projectionMatrix", getProjectionMatrix(), shader.getID()));
+    }
+    public void updateFrustum() {combinedMatrix.set(projectionMatrix).mul(viewMatrix); frustum.set(combinedMatrix);}
+
+    public void updateMatrices() {
+        Vector3f center = new Vector3f(cameraPosition).add(cameraOrientation);
+        viewMatrix.identity().lookAt(cameraPosition, center, upDirection);
+        projectionMatrix.identity().perspective(
+                (float) Math.toRadians(FOV), (float) width / (float) height, nearPlane, farPlane);
+    }
+
+    public boolean isInsideFrustum(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) { return frustum.testAab(minX, minY, minZ, maxX, maxY, maxZ); }
+    public Camera resizeWindow(int width, int height) { this.width = width; this.height = height; updateMatrices(); return this; }
+
+    public Camera setSpeed(float speed) { this.speed = speed; return this; }
+    public Camera setSensitivity(float sensitivity) { this.sensitivity = sensitivity; return this; }
+    public Camera setFOV(float FOV) { this.FOV = FOV; updateMatrices(); return this; }
+    public Camera setNearPlane(float nearPlane) { this.nearPlane = nearPlane; updateMatrices(); return this; }
+    public Camera setFarPlane(float farPlane) { this.farPlane = farPlane; updateMatrices(); return this; }
+
+}
