@@ -4,10 +4,12 @@ import dev.m4nd3l.cubegame.engine.interaction.WorldAction;
 import dev.m4nd3l.cubegame.engine.rendering.glfw.Window;
 import dev.m4nd3l.cubegame.engine.rendering.input.KeyboardKeys;
 import dev.m4nd3l.cubegame.game.registries.BlockRegistry;
-import dev.m4nd3l.cubegame.game.world.world.World;
+import dev.m4nd3l.cubegame.game.world.World;
 import dev.m4nd3l.cubegame.engine.ticks.UpdateHandler;
 import dev.m4nd3l.cubegame.game.world.world.WorldData;
 import dev.m4nd3l.cubegame.engine.rendering.input.InputSystem;
+import dev.m4nd3l.cubegame.game.world.world.WorldLoader;
+import dev.m4nd3l.cubegame.toolbox.ConvertingTool;
 import dev.m4nd3l.loggerutil.LoggerUtils;
 import dev.m4nd3l.loggerutil.logger.Logger;
 
@@ -50,12 +52,8 @@ public class CubegameEngine {
         worldAction(World::delete);
     }
 
-    public void loadWorld(String worldName)
-    { currentWorld = new World(new WorldData().setName("Paolo").setSeed(676767).setNewPlayer()); }
-    //loadWorld(worldName, ConvertingTool.convertToLong(worldName)); }
-    public void loadWorld(String worldName, long seed)
-    { currentWorld = new World(new WorldData().setName("Paolo").setSeed(676767).setNewPlayer()); }
-    //currentWorld = WorldLoader.loadWorld(worldName, seed); }
+    public void loadWorld(String worldName) { loadWorld(worldName, ConvertingTool.convertToLong(worldName)); }
+    public void loadWorld(String worldName, long seed) { currentWorld = WorldLoader.loadWorld(worldName, seed); }
 
     public void update(double deltaTime) { worldAction(world -> world.update(deltaTime)); }
 

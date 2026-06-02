@@ -2,6 +2,7 @@ package dev.m4nd3l.cubegame.game.blocks;
 
 import dev.m4nd3l.cubegame.engine.rendering.shape.VoxelShape;
 import dev.m4nd3l.cubegame.game.blocks.settings.BlockSettings;
+import dev.m4nd3l.cubegame.game.registries.BlockRegistry;
 
 import java.util.Objects;
 
@@ -23,6 +24,7 @@ public class Block {
     }
 
     public boolean isClassicBlock() { return renderingShape == VoxelShape.FULL_CUBE && hitboxShape == VoxelShape.FULL_CUBE; }
+    public boolean isAir() { return this == BlockRegistry.AIR; }
 
     public short getID() { return ID; }
     public String getName() { return name; }

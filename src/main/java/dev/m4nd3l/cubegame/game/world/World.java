@@ -1,4 +1,4 @@
-package dev.m4nd3l.cubegame.game.world.world;
+package dev.m4nd3l.cubegame.game.world;
 
 import dev.m4nd3l.cubegame.engine.communication.WorldRequest;
 import dev.m4nd3l.cubegame.engine.coordinates.BlockCoordinates;
@@ -10,7 +10,9 @@ import dev.m4nd3l.cubegame.game.blocks.Block;
 import dev.m4nd3l.cubegame.game.registries.BlockRegistry;
 import dev.m4nd3l.cubegame.game.world.chunks.Chunk;
 import dev.m4nd3l.cubegame.game.world.subchunk.SubChunk;
+import dev.m4nd3l.cubegame.game.world.world.WorldData;
 import dev.m4nd3l.cubegame.game.world.world.util.ChunkManager;
+import dev.m4nd3l.cubegame.toolbox.util.FileWrapper;
 
 import static dev.m4nd3l.cubegame.engine.coordinates.ChunkCoordinates.blockToChunk;
 
@@ -18,8 +20,8 @@ public class World extends ChunkManager {
     private WorldData data;
     private WorldRenderer renderer;
 
-    public World(WorldData data) {
-        super(data.getPlayer().getPosition().toChunk());
+    public World(WorldData data, FileWrapper mainFolder) {
+        super(data.getPlayer().getPosition().toChunk(), mainFolder);
         this.data = data;
         this.renderer = new WorldRenderer();
     }

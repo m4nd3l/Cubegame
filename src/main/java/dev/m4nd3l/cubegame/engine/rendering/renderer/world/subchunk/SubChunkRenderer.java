@@ -9,8 +9,9 @@ import dev.m4nd3l.cubegame.engine.rendering.opengl.wrapper.attributes.Vector2fAt
 import dev.m4nd3l.cubegame.engine.rendering.opengl.wrapper.attributes.Vector3fAttribute;
 import dev.m4nd3l.cubegame.engine.rendering.opengl.wrapper.attributes.Vector4fAttribute;
 import dev.m4nd3l.cubegame.engine.rendering.renderer.ShaderlessRenderer;
-import dev.m4nd3l.cubegame.game.world.subchunk.SubChunk;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import dev.m4nd3l.cubegame.toolbox.containers.FloatArray;
+
+import java.nio.FloatBuffer;
 
 import static dev.m4nd3l.cubegame.engine.rendering.opengl.OpenGL.drawArrays;
 import static dev.m4nd3l.cubegame.game.world.subchunk.SubChunk.SUBCHUNK_DIMENSION_SIZE;
@@ -18,25 +19,26 @@ import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 
 public class SubChunkRenderer extends ShaderlessRenderer {
     private transient volatile boolean dirty;
-    private final int FLOATS_PER_VERTEX = 13;
+    public static int FLOATS_PER_VERTEX = 13;
     private transient boolean attributesSet, isSeen;
     private transient VAO vao;
     private transient VBO vbo;
     private transient int verticesCount;
-    private transient FloatArrayList vertices;
+    private transient FloatArray vertices;
 
     public SubChunkRenderer() {
         this.dirty = true;
         this.attributesSet = false;
         this.verticesCount = 0;
-        this.vertices = new FloatArrayList();
     }
 
     public void uploadToGPU() {
         if (vertices == null) return;
 
-        verticesCount = vertices.size() / FLOATS_PER_VERTEX;
-        if (vertices.isEmpty()) {
+        int totalFloats = vertices.size();
+        verticesCount = totalFloats / FLOATS_PER_VERTEX;
+
+        if (totalFloats == 0) {
             vertices = null;
             return;
         }
@@ -44,21 +46,22 @@ public class SubChunkRenderer extends ShaderlessRenderer {
         if (vao == null) vao = new VAO();
         if (vbo == null) vbo = new VBO();
 
-        actionBetweenBinding(() -> vbo.uploadDataStaticDraw(vertices.elements()), vbo);
+        actionBetweenBinding(() -> vbo.uploadDataStaticDraw(vertices.getArray()), vbo);
 
         if (!attributesSet)
             actionBetweenBinding(() ->
                     vao.addAttributes(Float.BYTES * FLOATS_PER_VERTEX,
-                            new Vector3fAttribute(0, false),          // vec3 POS
-                            new Vector4fAttribute(1, false),          // vec4 COLOR
-                            new Vector2fAttribute(2, false),          // vec2 UVs
-                            new Vector3fAttribute(3, false),          // vec3 NORMALS
+                            new Vector3fAttribute(0, false),          // vec3  POS
+                            new Vector4fAttribute(1, false),          // vec4  COLOR
+                            new Vector2fAttribute(2, false),          // vec2  UVs
+                            new Vector3fAttribute(3, false),          // vec3  NORMALS
                             new FloatAttribute(4, false)), vao, vbo); // float TEXTURE ID
         attributesSet = true;
+        vertices.clear();
         vertices = null;
     }
 
-    public void remesh(FloatArrayList vertices) { this.vertices = vertices; }
+    public void remesh(FloatArray vertices) { if (vertices != null) vertices.trim(); this.vertices = vertices; }
 
     public void update(Camera camera, SubChunkCoordinates coordinates) { if (!camera.frustumFreeze) isSeen(camera, coordinates); }
     public void render() { if (verticesCount == 0 || !isSeen) return; actionBetweenBinding(() -> drawArrays(GL_TRIANGLES, 0, verticesCount), vao); }

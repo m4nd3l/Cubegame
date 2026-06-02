@@ -60,4 +60,6 @@ public class BlockRegistry {
 
     public static String getBlockName(short ID) { return BLOCKS.getV(ID).getName(); }
     public static String getBlockName(Block block) { return BLOCK_NAMES.getK(block); }
+
+    public static int getLastID() { return lastID - 1; }
 }

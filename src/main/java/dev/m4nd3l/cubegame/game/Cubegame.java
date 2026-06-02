@@ -20,7 +20,7 @@ public class Cubegame {
 
         SETTINGS = new CubegameSettings()
                 .setPlayerName("Player")
-                .setRenderDistance(8)
+                .setRenderDistance(16)
                 .setFOV(80);
 
         if (SavingLocations.SETTINGS_FILE.exists())

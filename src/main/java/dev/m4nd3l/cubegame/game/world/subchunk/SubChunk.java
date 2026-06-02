@@ -9,7 +9,10 @@ import dev.m4nd3l.cubegame.engine.rendering.renderer.world.subchunk.SubChunkRend
 import dev.m4nd3l.cubegame.game.blocks.Block;
 import dev.m4nd3l.cubegame.game.registries.BlockRegistry;
 import dev.m4nd3l.cubegame.game.world.subchunk.util.BlockHolder;
+import dev.m4nd3l.cubegame.toolbox.containers.FloatArray;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
+
+import java.nio.FloatBuffer;
 
 public class SubChunk extends BlockHolder {
     public static final short SUBCHUNK_DIMENSION_SIZE = 16;
@@ -55,8 +58,11 @@ public class SubChunk extends BlockHolder {
     public void render() { if (renderer != null) renderer.render(); }
     public void delete() { if (renderer != null) renderer.delete(); }
 
-    public void remesh(FloatArrayList vertices) { renderer.remesh(vertices); renderer.dirty(false); }
-    public void reupload() { renderer.uploadToGPU(); meshing = false; }
+    public void remesh(FloatArray vertices) { renderer.remesh(vertices); renderer.dirty(false); }
+    public void reupload() {
+        if (renderer == null) { loadRendererRequest(); remeshRequest(); }
+        else { renderer.uploadToGPU(); meshing = false; }
+    }
 
     public boolean isMeshing() { return meshing; }
 

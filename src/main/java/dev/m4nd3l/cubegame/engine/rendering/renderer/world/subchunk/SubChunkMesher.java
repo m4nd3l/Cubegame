@@ -8,13 +8,18 @@ import dev.m4nd3l.cubegame.game.blocks.Block;
 import dev.m4nd3l.cubegame.game.blocks.BlockTexture;
 import dev.m4nd3l.cubegame.game.blocks.settings.color.Color;
 import dev.m4nd3l.cubegame.game.registries.BlockRegistry;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import dev.m4nd3l.cubegame.toolbox.containers.FloatArray;
 
+import java.nio.FloatBuffer;
+
+import static dev.m4nd3l.cubegame.engine.rendering.renderer.world.subchunk.SubChunkRenderer.FLOATS_PER_VERTEX;
 import static dev.m4nd3l.cubegame.game.world.subchunk.SubChunk.SUBCHUNK_DIMENSION_SIZE;
 
 public class SubChunkMesher {
-    public static FloatArrayList mesh(SubChunkCoordinates coords, short[] blocks, WorldProvider worldProvider) {
-        FloatArrayList vertices = new FloatArrayList(SUBCHUNK_DIMENSION_SIZE * SUBCHUNK_DIMENSION_SIZE * SUBCHUNK_DIMENSION_SIZE * 6);
+    private static final int MAX_FLOATS = 16 * 16 * 16 * 6 * 4 * FLOATS_PER_VERTEX;
+
+    public static FloatArray mesh(SubChunkCoordinates coords, short[] blocks, WorldProvider worldProvider) {
+        FloatArray vertices = new FloatArray(MAX_FLOATS);
 
         int worldStartX = coords.toBlock().x();
         int worldStartY = coords.toBlock().y();
@@ -83,20 +88,20 @@ public class SubChunkMesher {
 
     public static boolean isTransparent(Block block) { return block.equals(BlockRegistry.AIR); }
 
-    private static void addVertex(FloatArrayList list,
+    private static void addVertex(FloatArray list,
                                   float x, float y, float z,
                                   Color c,
                                   float u, float v,
                                   float normalX, float normalY, float normalZ,
                                   float textureID) {
-        list.add(x); list.add(y); list.add(z);
-        list.add(c.getR()); list.add(c.getG()); list.add(c.getB()); list.add(c.getA());
-        list.add(u); list.add(v);
-        list.add(normalX); list.add(normalY); list.add(normalZ);
-        list.add(textureID);
+        list.put(x); list.put(y); list.put(z);                                           // vec3  POS
+        list.put(c.getR()); list.put(c.getG()); list.put(c.getB()); list.put(c.getA());  // vec4  COLOR
+        list.put(u); list.put(v);                                                        // vec2  UVs
+        list.put(normalX); list.put(normalY); list.put(normalZ);                         // vec3  NORMALS
+        list.put(textureID);                                                             // float TEXTURE ID
     }
 
-    private static void addFrontFace(FloatArrayList v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
+    private static void addFrontFace(FloatArray v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
         VoxelShape.UVBounds uv = cuboid.getSouthUV();
         float minX = bx + cuboid.minX(), maxX = bx + cuboid.maxX();
         float minY = by + cuboid.minY(), maxY = by + cuboid.maxY();
@@ -111,7 +116,7 @@ public class SubChunkMesher {
         addVertex(v, minX, maxY, maxZ, color, uv.uMin(), uv.vMax(), 0, 0, 1, textureID);
     }
 
-    private static void addBackFace(FloatArrayList v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
+    private static void addBackFace(FloatArray v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
         VoxelShape.UVBounds uv = cuboid.getNorthUV();
         float minX = bx + cuboid.minX(), maxX = bx + cuboid.maxX();
         float minY = by + cuboid.minY(), maxY = by + cuboid.maxY();
@@ -126,7 +131,7 @@ public class SubChunkMesher {
         addVertex(v, maxX, maxY, minZ, color, uv.uMin(), uv.vMax(), 0, 0, -1, textureID);
     }
 
-    private static void addRightFace(FloatArrayList v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
+    private static void addRightFace(FloatArray v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
         VoxelShape.UVBounds uv = cuboid.getEastUV();
         float maxX = bx + cuboid.maxX();
         float minY = by + cuboid.minY(), maxY = by + cuboid.maxY();
@@ -141,7 +146,7 @@ public class SubChunkMesher {
         addVertex(v, maxX, maxY, maxZ, color, uv.uMin(), uv.vMax(), 1, 0, 0, textureID);
     }
 
-    private static void addLeftFace(FloatArrayList v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
+    private static void addLeftFace(FloatArray v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
         VoxelShape.UVBounds uv = cuboid.getWestUV();
         float minX = bx + cuboid.minX();
         float minY = by + cuboid.minY(), maxY = by + cuboid.maxY();
@@ -156,7 +161,7 @@ public class SubChunkMesher {
         addVertex(v, minX, maxY, minZ, color, uv.uMin(), uv.vMax(), -1, 0, 0, textureID);
     }
 
-    private static void addTopFace(FloatArrayList v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
+    private static void addTopFace(FloatArray v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
         VoxelShape.UVBounds uv = cuboid.getTopUV();
         float minX = bx + cuboid.minX(), maxX = bx + cuboid.maxX();
         float maxY = by + cuboid.maxY();
@@ -171,7 +176,7 @@ public class SubChunkMesher {
         addVertex(v, minX, maxY, minZ, color, uv.uMin(), uv.vMax(), 0, 1, 0, textureID);
     }
 
-    private static void addBottomFace(FloatArrayList v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
+    private static void addBottomFace(FloatArray v, float bx, float by, float bz, Cuboid cuboid, Color color, float textureID) {
         VoxelShape.UVBounds uv = cuboid.getBottomUV();
         float minX = bx + cuboid.minX(), maxX = bx + cuboid.maxX();
         float minY = by + cuboid.minY();
